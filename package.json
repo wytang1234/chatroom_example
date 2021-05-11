@@ -1,0 +1,29 @@
+{
+  "name": "chatroom",
+  "version": "1.0.0",
+  "description": "README.md",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^7.0.0",
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "i": "^0.3.6",
+    "npm": "^7.12.0",
+    "socket.io": "^4.0.2",
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wytang1234/chatroom_example.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wytang1234/chatroom_example/issues"
+  },
+  "homepage": "https://github.com/wytang1234/chatroom_example#readme"
+}

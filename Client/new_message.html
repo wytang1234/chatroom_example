@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Chatroom Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/chat.css">
+</head>
+
+<body>
+  <div id="app">
+    <nav class="navbar navbar-inverse">
+      <a class="navbar-brand" href="#">Chatroom Example</a>
+    </nav>
+    <div class="container-fluid">
+      <div class="row">
+        <main class="col-sm-12 messages-main">
+          <div class="row messages-header">
+            <div class="col-sm-10">
+              New Chatroom
+            </div>
+            <div class="col-sm-2">
+              <a href="get_chat_list.html" id="back">Back</a>
+            </div>
+          </div>
+          <div class="row messages-body">
+            <div class="col-sm-12" id="wrong" hidden>
+              <img src="https://www.maxpixel.net/static/photo/1x/Abort-Remove-Red-Cross-Error-Cancel-Delete-156119.png" width="50%"/>
+            </div>
+            <div class="col-sm-12"  id="correct" hidden>
+              <img src="https://ifc.com.hk/media/tick.png" width="50%"/>
+            </div>
+          </div>
+          <div class="row messages-footer">
+            <div class="col-sm-2">
+              <input type="text" class="form-control" id="to" placeholder="To">
+            </div>
+            <div class="col-sm-10 input-group">
+              <input type="text" class="form-control" placeholder="Message text...">
+              <span class="input-group-btn">
+                  <button class="btn btn-primary" type="button">Send</button>
+                </span>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.0.2/dist/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<script>
+  let urlParams = new URLSearchParams(window.location.search)
+  let queryString = (_mapUrlParams(urlParams.toString()))
+  let { uuid, account_number_arr } = queryString
+
+  $("#back").attr('href', `get_chat_list.html?uuid=${uuid}`)
+  if(uuid){
+    $("#correct").attr("hidden")
+    $("#wrong").attr("hidden")
+    let socket = io.connect('http://localhost:3000', { reconnect: true, connect_timeout: 5000 })
+    socket.on("connect", () => {
+      let socket_id = socket.id
+      console.log('add_message', { account_number_arr, socket_id })
+      socket.emit('add_message', { account_number_arr, socket_id })
+    })
+
+    socket.on('add_room_result', function(data){
+      console.log(data)
+    })
+  }else{
+    $("#wrong").removeAttr("hidden")
+    $("#correct").attr("hidden")
+  }
+
+  function _mapUrlParams(queryString) {
+    return queryString    
+      .split('&') 
+      .map(function(keyValueString) { return keyValueString.split('=') })
+      .reduce(function(urlParams, [key, value]) {
+        if (Number.isInteger(parseInt(value)) && parseInt(value) == value) {
+          urlParams[key] = parseInt(value);
+        } else {
+          urlParams[key] = decodeURI(value);
+        }
+        return urlParams;
+      }, {});
+  }
+</script>
+</body>
+
+</html>

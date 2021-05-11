@@ -1,8 +1,8 @@
 - Init
-	```npm install```
+	- ```npm install```
 
 - Server Side
-	```node Server/index.js```
+	- ```node Server/index.js```
 
 - Client Side
 	- User1

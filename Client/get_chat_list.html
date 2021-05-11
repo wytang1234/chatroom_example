@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Chatroom Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/chat.css">
+</head>
+
+<body>
+  <div id="app">
+    <nav class="navbar navbar-inverse">
+      <a class="navbar-brand" href="#">Chatroom Example</a>
+    </nav>
+    <div class="container-fluid">
+      <div class="row">
+        <nav class="col-sm-12 bg-faded members">
+          <div class="row members-header">
+            <div class="col-sm-10">
+              Chat List
+            </div>
+            <div class="col-sm-2">
+              <a href="new_message.html" id="new">New Chat</a>
+            </div>
+          </div>
+          <div class="row members-body" v-cloak>
+            <ul class="list-group members-group" id="ul" />
+          </div>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.0.2/dist/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<script>
+  function _mapUrlParams(queryString){
+    return queryString    
+      .split('&') 
+      .map(function(keyValueString) { return keyValueString.split('=') })
+      .reduce(function(urlParams, [key, value]) {
+        if (Number.isInteger(parseInt(value)) && parseInt(value) == value) {
+          urlParams[key] = parseInt(value)
+        } else {
+          urlParams[key] = decodeURI(value)
+        }
+        return urlParams
+      }, {})
+  }
+
+  let urlParams = new URLSearchParams(window.location.search)
+  let queryString = (_mapUrlParams(urlParams.toString()))
+  let { uuid } = queryString
+
+  $("#new").attr('href', `new_message.html?uuid=${uuid}`)
+  if(uuid){
+    let socket = io.connect('http://localhost:3000', { reconnect: true, connect_timeout: 5000 })
+    socket.on("connect", () => {
+      let socket_id = socket.id
+      console.log(uuid, "get_chat_list")
+      socket.emit('get_chat_list', { uuid, socket_id })
+    })
+
+    socket.on('get_chat_list_result', (data) => {
+      $("#ul").empty()
+      data.forEach((x, i) => {
+        let li = document.createElement("li")
+        let img = document.createElement("img")
+        let href = document.createElement("a")
+        let username_dev = document.createElement("div")
+        let msg_dev = document.createElement("div")
+        let msg_date_dev = document.createElement("div")
+
+        $(li).addClass("list-group-item member-item justify-content-between bg-faded")
+        $(li).attr('id', x.chat_token)
+        $(href).attr('href', `private_chat.html?uuid=${uuid}&chat_token=${x.chat_token}`)
+        $(img).addClass("rounded-circle mr-1")
+        $(img).attr('src', "https://assets.coingecko.com/coins/images/11939/small/SHIBLOGO.png?1600752116")
+        $(username_dev).addClass("col-sm-3")
+        $(username_dev).text(x.last_message.uuid.substring(0,8))
+        $(msg_dev).addClass("col-sm-5")
+        $(msg_dev).text(x.last_message.message)
+        $(msg_date_dev).addClass("col-sm-2")
+        $(msg_date_dev).text(moment(x.last_message.create_date).format('YYYYMMDD HH:mm'))
+        $(href).append(img)
+        $(li).append(href, username_dev, msg_dev, msg_date_dev)
+        $("#ul").append(li)
+      })
+    })
+
+    socket.on("test", (data) => {console.log(data)})
+  }else{
+    console.exception("No uuid")
+  }
+
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "chatroom_example",
+  "version": "1.0.0",
+  "description": "README.md",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wytang1234/chatroom_example.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wytang1234/chatroom_example/issues"
+  },
+  "homepage": "https://github.com/wytang1234/chatroom_example#readme"
+}

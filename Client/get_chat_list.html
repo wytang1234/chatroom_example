@@ -34,11 +34,266 @@
     </div>
   </div>
 
+<script src="./js/solclient.js"></script>
+<script src="./js/mqttws31.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.0.2/dist/socket.io.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
 <script>
+  var publisher = null
+  var client = null
+  const solaceConf = {
+    hosturl: "",
+    username: "", 
+    pass: "", 
+    vpn: "",
+    host: "",
+    port: 123
+  }
+
+  $(document).ready(() => {
+    let urlParams = new URLSearchParams(window.location.search)
+    let queryString = (_mapUrlParams(urlParams.toString()))
+    let { uuid } = queryString
+
+    // Initialize factory with the most recent API defaults
+    var factoryProps = new solace.SolclientFactoryProperties();
+    factoryProps.profile = solace.SolclientFactoryProfiles.version10;
+    solace.SolclientFactory.init(factoryProps);
+
+
+    $("#new").attr('href', `new_message.html?uuid=${uuid}`)
+    if(uuid){
+      if (publisher) { publisher.connectToSolace() }
+      pubto(`req_chat_list/${uuid}`, {})
+
+      var topic_name = `res_chat_list/${uuid}`
+      client = new Paho.MQTT.Client(solaceConf.host, solaceConf.port, "1")
+
+      client.onConnectionLost = onConnectionLost;
+      client.onMessageArrived = onMessageArrived;
+
+      client.connect({
+        userName: solaceConf.username,
+        password: solaceConf.pass,
+        onSuccess: onConnect,
+        onFailure: failSub,
+        useSSL: false,
+      });
+
+      // let socket = io.connect('http://localhost:3000', { reconnect: true, connect_timeout: 5000 })
+      // socket.on("connect", () => {
+      //   let socket_id = socket.id
+      //   console.log(uuid, "get_chat_list")
+      //   socket.emit('get_chat_list', { uuid, socket_id })
+      // })
+
+      // socket.on('get_chat_list_result', (data) => {
+      //   $("#ul").empty()
+      //   data.forEach((x, i) => {
+      //     let li = document.createElement("li")
+      //     let img = document.createElement("img")
+      //     let href = document.createElement("a")
+      //     let username_dev = document.createElement("div")
+      //     let msg_dev = document.createElement("div")
+      //     let msg_date_dev = document.createElement("div")
+
+      //     $(li).addClass("list-group-item member-item justify-content-between bg-faded")
+      //     $(li).attr('id', x.chat_token)
+      //     $(href).attr('href', `private_chat.html?uuid=${uuid}&chat_token=${x.chat_token}`)
+      //     $(img).addClass("rounded-circle mr-1")
+      //     $(img).attr('src', "https://assets.coingecko.com/coins/images/11939/small/SHIBLOGO.png?1600752116")
+      //     $(username_dev).addClass("col-sm-3")
+      //     $(username_dev).text(x.last_message.uuid.substring(0,8))
+      //     $(msg_dev).addClass("col-sm-5")
+      //     $(msg_dev).text(x.last_message.message)
+      //     $(msg_date_dev).addClass("col-sm-2")
+      //     $(msg_date_dev).text(moment(x.last_message.create_date).format('YYYYMMDD HH:mm'))
+      //     $(href).append(img)
+      //     $(li).append(href, username_dev, msg_dev, msg_date_dev)
+      //     $("#ul").append(li)
+      //   })
+      // })
+
+      // socket.on("test", (data) => {console.log(data)})
+
+    }else{
+      console.exception("No uuid")
+    }
+  })
+
+
+  function pubto(topic, msg) {
+    let publisher = new TopicPublisher(topic);
+    publisher.connect();
+    setTimeout(() => {
+      publisher.publish(JSON.stringify(msg));
+    }, 2000);
+  }
+
+  var TopicPublisher = function (topicName) {
+    "use strict";
+    var publisher = {};
+    publisher.session = null;
+    publisher.topicName = topicName;
+
+    // // Logger
+    // publisher.log = function (line) {
+    //   var now = new Date();
+    //   var time = [
+    //     ("0" + now.getHours()).slice(-2),
+    //     ("0" + now.getMinutes()).slice(-2),
+    //     ("0" + now.getSeconds()).slice(-2),
+    //   ];
+    //   var timestamp = "[" + time.join(":") + "] ";
+    //   console.log(timestamp + line);
+    //   var logTextArea = document.getElementById("log");
+    //   logTextArea.value += timestamp + line + "\n";
+    //   logTextArea.scrollTop = logTextArea.scrollHeight;
+    // };
+
+    // publisher.log(
+    //   '\n*** Publisher to topic "' +
+    //     publisher.topicName +
+    //     '" is ready to connect ***'
+    // );
+
+    // Establishes connection to Solace message router
+    publisher.connect = function () {
+      // extract params
+      if (publisher.session !== null) {
+        // publisher.log("Already connected and ready to publish messages.");
+        return;
+      }
+      var hosturl = solaceConf.hosturl;
+      // check for valid protocols
+      if (
+        hosturl.lastIndexOf("ws://", 0) !== 0 &&
+        hosturl.lastIndexOf("wss://", 0) !== 0 &&
+        hosturl.lastIndexOf("http://", 0) !== 0 &&
+        hosturl.lastIndexOf("https://", 0) !== 0
+      ) {
+        // publisher.log(
+          // "Invalid protocol - please use one of ws://, wss://, http://, https://"
+        // );
+        return;
+      }
+      var username = solaceConf.username;
+      var pass = solaceConf.pass;
+      var vpn = solaceConf.vpn;
+      if (!hosturl || !username || !pass || !vpn) {
+        // publisher.log(
+          // "Cannot connect: please specify all the Solace message router properties."
+        // );
+        return;
+      }
+      // publisher.log(
+        // "Connecting to Solace message router using url: " + hosturl
+      // );
+      // publisher.log("Client username: " + username);
+      // publisher.log("Solace message router VPN name: " + vpn);
+      // create session
+      try {
+        publisher.session = solace.SolclientFactory.createSession({
+          // solace.SessionProperties
+          url: hosturl,
+          vpnName: vpn,
+          userName: username,
+          password: pass,
+        });
+      } catch (error) {
+        // publisher.log(error.toString());
+      }
+      // define session event listeners
+      publisher.session.on(solace.SessionEventCode.UP_NOTICE, function (
+        sessionEvent
+      ) {
+        // publisher.log(
+        //   "=== Successfully connected and ready to publish messages. ==="
+        // );
+      });
+      publisher.session.on(
+        solace.SessionEventCode.CONNECT_FAILED_ERROR,
+        function (sessionEvent) {
+          // publisher.log(
+          //   "Connection failed to the message router: " +
+          //     sessionEvent.infoStr +
+          //     " - check correct parameter values and connectivity!"
+          // );
+        }
+      );
+      publisher.session.on(solace.SessionEventCode.DISCONNECTED, function (
+        sessionEvent
+      ) {
+        // publisher.log("Disconnected.");
+        if (publisher.session !== null) {
+          publisher.session.dispose();
+          publisher.session = null;
+        }
+      });
+
+      publisher.connectToSolace();
+    };
+
+    // Actually connects the session triggered when the iframe has been loaded - see in html code
+    publisher.connectToSolace = function () {
+      try {
+        publisher.session.connect();
+      } catch (error) {
+        // publisher.log(error.toString());
+      }
+    };
+
+    // Publishes one message
+    publisher.publish = function (msg) {
+      if (publisher.session !== null) {
+        var messageText = msg;
+        var message = solace.SolclientFactory.createMessage();
+        message.setDestination(
+          solace.SolclientFactory.createTopicDestination(
+            publisher.topicName
+          )
+        );
+        message.setBinaryAttachment(messageText);
+        message.setDeliveryMode(solace.MessageDeliveryModeType.DIRECT);
+        // publisher.log(
+        //   'Publishing message "' +
+        //     messageText +
+        //     '" to topic "' +
+        //     publisher.topicName +
+        //     '"...'
+        // );
+        try {
+          publisher.session.send(message);
+          // publisher.log("Message published.");
+        } catch (error) {
+          // publisher.log(error.toString());
+        }
+      } else {
+        // publisher.log(
+        //   "Cannot publish because not connected to Solace message router."
+        // );
+      }
+    };
+
+    // Gracefully disconnects from Solace message router
+    publisher.disconnect = function () {
+      // publisher.log("Disconnecting from Solace message router...");
+      if (publisher.session !== null) {
+        try {
+          publisher.session.disconnect();
+        } catch (error) {
+          // publisher.log(error.toString());
+        }
+      } else {
+        // publisher.log("Not connected to Solace message router.");
+      }
+    };
+
+    return publisher;
+  }
+
   function _mapUrlParams(queryString){
     return queryString    
       .split('&') 
@@ -53,49 +308,35 @@
       }, {})
   }
 
-  let urlParams = new URLSearchParams(window.location.search)
-  let queryString = (_mapUrlParams(urlParams.toString()))
-  let { uuid } = queryString
-
-  $("#new").attr('href', `new_message.html?uuid=${uuid}`)
-  if(uuid){
-    let socket = io.connect('http://localhost:3000', { reconnect: true, connect_timeout: 5000 })
-    socket.on("connect", () => {
-      let socket_id = socket.id
-      console.log(uuid, "get_chat_list")
-      socket.emit('get_chat_list', { uuid, socket_id })
-    })
-
-    socket.on('get_chat_list_result', (data) => {
-      $("#ul").empty()
-      data.forEach((x, i) => {
-        let li = document.createElement("li")
-        let img = document.createElement("img")
-        let href = document.createElement("a")
-        let username_dev = document.createElement("div")
-        let msg_dev = document.createElement("div")
-        let msg_date_dev = document.createElement("div")
-
-        $(li).addClass("list-group-item member-item justify-content-between bg-faded")
-        $(li).attr('id', x.chat_token)
-        $(href).attr('href', `private_chat.html?uuid=${uuid}&chat_token=${x.chat_token}`)
-        $(img).addClass("rounded-circle mr-1")
-        $(img).attr('src', "https://assets.coingecko.com/coins/images/11939/small/SHIBLOGO.png?1600752116")
-        $(username_dev).addClass("col-sm-3")
-        $(username_dev).text(x.last_message.uuid.substring(0,8))
-        $(msg_dev).addClass("col-sm-5")
-        $(msg_dev).text(x.last_message.message)
-        $(msg_date_dev).addClass("col-sm-2")
-        $(msg_date_dev).text(moment(x.last_message.create_date).format('YYYYMMDD HH:mm'))
-        $(href).append(img)
-        $(li).append(href, username_dev, msg_dev, msg_date_dev)
-        $("#ul").append(li)
-      })
-    })
-
-    socket.on("test", (data) => {console.log(data)})
-  }else{
-    console.exception("No uuid")
+  function onConnect() {
+    // Once a connection has been made, make a subscription and send a message.
+    client.subscribe(topic_name, {
+      onSuccess: successSub,
+      onFailure: failSub,
+    });
+  }
+  function onConnectionLost(responseObject) {
+    // if (responseObject.errorCode !== 0)
+      // showlog("onConnectionLost:" + responseObject.errorMessage);
+  }
+  function onMessageArrived(message) {
+    // showlog("onMessageArrived:" + message.payloadString);
+    var temp = JSON.parse(message.payloadString);
+    if (temp.clear) {
+      table.clear().draw();
+    } else {
+      console.log(temp)
+      // push_odd(temp);
+    }
+  }
+  function successSub(responseObject) {
+    console.log(responseObject)
+    // showlog("Successfully subscribe to the topic " + topic_name);
+    // console.log(responseObject);
+  }
+  function failSub(responseObject) {
+    console.log(responseObject)
+    // showlog("Cannot subscribe to the topic" + responseObject);
   }
 
 

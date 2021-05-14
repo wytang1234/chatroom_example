@@ -62,11 +62,12 @@
     let socket = io.connect('http://localhost:3000', { reconnect: true, connect_timeout: 5000 })
     socket.on("connect", () => {
       let socket_id = socket.id
-      console.log(uuid, "get_chat_list")
-      socket.emit('get_chat_list', { uuid, socket_id })
+      console.log(uuid, "req_chat_list")
+      socket.emit('req_chat_list', { uuid, socket_id })
     })
 
-    socket.on('get_chat_list_result', (data) => {
+    socket.on('res_chat_list', (data) => {
+      console.log(uuid, "res_chat_list")
       $("#ul").empty()
       data.forEach((x, i) => {
         let li = document.createElement("li")
@@ -101,5 +102,4 @@
 
 </script>
 </body>
-
 </html>

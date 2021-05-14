@@ -16,7 +16,7 @@
     "http": "0.0.1-security",
     "i": "^0.3.6",
     "npm": "^7.12.0",
-    "socket.io": "^4.0.2",
+    "socket.io": "^4.0.2"
   },
   "repository": {
     "type": "git",

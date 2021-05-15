@@ -12,5 +12,5 @@ io.on('connection', function (socket) {
   socket.on('req_push_message', (data) => { add_message(data, socket, io) })
   socket.on('req_chat_list', (data) => { get_chat_list(data, socket, io) })
   socket.on('get_chat_history', (data) => { get_chat_history(data, socket, io) })
-});
-server.listen(3000, () => { console.log(`Socket Server listening on 0.0.0.0:${ 3000 }!`) });
+})
+server.listen(Config.socket_port, () => { console.log(`WebSocket Server listening on 127.0.0.1:${Config.socket_port} at ${new Date()}!`) });

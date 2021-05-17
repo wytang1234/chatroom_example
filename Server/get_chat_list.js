@@ -1,35 +1,30 @@
+let data_chat_list = require("../Data/chat_list.json")
+let data_message = require("../Data/message.json")
+let data_user = require("../Data/user.json")
+
 module.exports = async ({ uuid, socket_id }, socket, io) => { 
-  console.log(uuid, "get_chat_list")
-  socket.emit('get_chat_list_result', 
-    [
-      {
-        member: [
-          "4d0ec78d-b0ac-464c-81df-391176feed7d",
-          "166bb261-51d3-4c9e-ab45-0a3ad76e1f81",
-        ], 
-        chat_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZW1iZXIiOlsiNGQwZWM3OGQtYjBhYy00NjRjLTgxZGYtMzkxMTc2ZmVlZDdkIiwiMTY2YmIyNjEtNTFkMy00YzllLWFiNDUtMGEzYWQ3NmUxZjgxIl19.IjYbtadXOLgNrVwF4F2Q4yYg7SBdY--HfzIG3xJDln4",
-        last_message: {
-          uuid: "166bb261-51d3-4c9e-ab45-0a3ad76e1f81",
-          message: "hi",
-          seen_member:[],
-          create_date: new Date("2021-01-27 00:00:00")
-        },
-        create_date: new Date("2021-01-26 00:00:00")
-      },
-      {
-        member: [
-          "4d0ec78d-b0ac-464c-81df-391176feed7d",
-          "37d31c31-9a43-44e4-9194-d9601704adc7",
-        ], 
-        chat_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZW1iZXIiOlsiNGQwZWM3OGQtYjBhYy00NjRjLTgxZGYtMzkxMTc2ZmVlZDdkIiwiMTY2YmIyNjEtNTFkMy00YzllLWFiNDUtMGEzYWQ3NmUxZjgxIl19.IjYbtadXOLgNrVwF4F2Q4yYg7SBdY--HfzIG3xJDln4",
-        last_message: {
-          uuid: "166bb261-51d3-4c9e-ab45-0a3ad76e1f81",
-          message: "jm9",
-          seen_member:[],
-          create_date: new Date("2021-01-26 16:00:00")
-        },
-        create_date: new Date("2021-01-26 00:00:00")
-      }
-    ]
-  )
+  console.log(uuid, "req_chat_list")
+
+  // Get chat list
+  let selected_chat_list = data_chat_list.filter((x) => { return x.member.includes(uuid) })
+  if(selected_chat_list.length){
+    selected_chat_list = selected_chat_list.map((x) => {
+      let message_list = data_message.filter((y) => { return x.chat_token == y.chat_token })
+      let last_msg = message_list.map(function(e) { return e.create_date }).sort().reverse()[0]
+      x.last_message = message_list.find((x) => { return x.create_date.toString() == last_msg })
+      return x
+    })
+  }
+  socket.emit('res_chat_list', selected_chat_list)
+
+  // Update socket_id
+  let user = data_user.find((x) => { return x.uuid == uuid })
+  if(user){
+    user.socket_id.push(socket_id)
+  }else{
+    data_user.push({
+      uuid,
+      socket_id: [ socket_id ]
+    })
+  }
 }

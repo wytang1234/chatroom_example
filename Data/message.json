@@ -1,0 +1,20 @@
+[
+	{
+    "message": "hi", 
+    "uuid": "166bb261-51d3-4c9e-ab45-0a3ad76e1f81",
+    "chat_token": "CHAT1",
+    "message_token": "MSG1",
+    "seen_member": [ "166bb261-51d3-4c9e-ab45-0a3ad76e1f81" ],
+    "create_date": "Wed Jan 27 2021 00:00:00 GMT+0800",
+    "id":1
+  },
+  {
+    "message": "jm9", 
+    "uuid": "37d31c31-9a43-44e4-9194-d9601704adc7",
+    "chat_token": "CHAT2",
+    "message_token": "MSG2",
+    "seen_member": [ "37d31c31-9a43-44e4-9194-d9601704adc7" ],
+    "create_date": "Wed Jan 27 2021 00:00:00 GMT+0800",
+    "id":2
+  }
+]
